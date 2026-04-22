@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+._*
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# 编辑器临时文件
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# 材料文件夹中的原始案例（每次会前清空重放，不纳入版本控制）
+材料/*
+!材料/.gitkeep
