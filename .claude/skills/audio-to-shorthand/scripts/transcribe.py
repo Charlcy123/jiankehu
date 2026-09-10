@@ -15,6 +15,9 @@
   <名>.txt             每段一行，前缀 [mm:ss]，直接可作逐字稿
   <名>.srt             字幕格式，可导入剪辑软件核对
 
+输入如果是 shrink.py 切出来的 <名>.partNN.ogg，会自动读同目录的 <名>.parts.json，
+把该段的时间戳加上偏移，几段的 .txt 直接首尾相接就是完整逐字稿。
+
 引擎：
   faster-whisper  本机运行，免费离线，首次使用会从 HuggingFace 下载模型。
                   依赖: pip install faster-whisper   （自带音频解码，不需要系统装 ffmpeg）
@@ -27,6 +30,7 @@
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -130,6 +134,24 @@ def build_initial_prompt(hotwords: str | None) -> str:
         if words:
             base += "提到的名词包括：" + "、".join(words) + "。"
     return base
+
+
+def part_offset(path: Path) -> float:
+    """shrink.py 切出来的 <名>.partNN.ogg 会带一个 <名>.parts.json，从里面取该段的起始偏移。"""
+    m = re.match(r"^(.*)\.part(\d+)$", path.stem)
+    if not m:
+        return 0.0
+    manifest = path.parent / f"{m.group(1)}.parts.json"
+    if not manifest.exists():
+        return 0.0
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        for part in data.get("parts", []):
+            if part.get("file") == path.name:
+                return float(part.get("offset_sec", 0))
+    except Exception:
+        pass
+    return 0.0
 
 
 # ---------- 引擎：faster-whisper ----------
@@ -339,6 +361,13 @@ def transcribe_one(path: Path, args):
     if args.engine == "auto" and errors and not args.quiet:
         print("  （已跳过的引擎：" + "；".join(errors) + "）", file=sys.stderr)
 
+    offset = part_offset(path)
+    if offset:
+        for seg in segments:
+            seg["start"] += offset
+            seg["end"] += offset
+        meta["part_offset_sec"] = offset
+        print(f"  分段文件，时间戳已加上偏移 {fmt_ts(offset)}", file=sys.stderr)
     meta["source"] = path.name
     meta["hotwords"] = args.hotwords or ""
     if not meta.get("duration"):

@@ -60,6 +60,20 @@ python3 transcribe.py 录音.m4a --engine dashscope --audio-url "https://your-bu
 ```
 Paraformer 的录音文件识别是**异步拉取**模式，需要音频有公网可访问的 URL（放 OSS 或任何对象存储都行）。没有 URL 的话用不了这个引擎，脚本会提示。本地文件参数仍要给，用来读时长和命名输出。
 
+## 压缩与切分（shrink.py）
+
+网页上传有 30MB 左右的限制，`scripts/shrink.py` 把录音转成 16kHz 单声道 Opus（默认 32kbps），并在预计超过 `--max-mb`（默认 28）时按时长等分成几段：
+
+```bash
+python3 shrink.py 录音.m4a                     # 录音.shrunk.ogg
+python3 shrink.py 三小时讲座.m4a --bitrate 24k  # 三小时讲座.part01.ogg ... + 三小时讲座.parts.json
+```
+
+- 有 ffmpeg 用 ffmpeg，没有就用 PyAV，结果一样
+- 某一段仍超限会自动降码率重编，最低 12kbps；还超就把 `--max-mb` 调小多切几段
+- `.parts.json` 记录每段的起始偏移。`transcribe.py` 遇到 `<名>.partNN.ogg` 会自动读它并校正时间戳，所以分段转写出来的逐字稿时间戳是全程连续的
+- 24kbps 对普通话转写没有明显损失；有大量英文或音质本来就差的录音用 32k 或 48k
+
 ## 引擎都用不了的时候
 
 按这个顺序建议用户：

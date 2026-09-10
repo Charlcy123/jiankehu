@@ -8,6 +8,16 @@
 2. 第一次用，让 Claude 检查环境：`python3 .claude/skills/audio-to-shorthand/scripts/transcribe.py --check`。缺什么它会告诉你，通常只需要 `pip install faster-whisper`
 3. 之后把录音文件丢给 Claude，说"转速记"就行。已经有讯飞/飞书妙记转写文本的，直接丢文本
 
+## 文件超过 30MB 传不上网页
+
+先压一下再传（一小时约 12-15MB，太长会自动切段）：
+
+```bash
+python3 .claude/skills/audio-to-shorthand/scripts/shrink.py 录音.m4a
+```
+
+在本机 Claude Code 里用则不需要这一步。
+
 ## 会得到什么
 
 - `<文件名>-逐字稿.txt`：机器原始转写，带时间戳，用来核对
@@ -19,6 +29,7 @@
 audio-to-shorthand/
 ├── SKILL.md              ← Claude 读的主说明
 ├── scripts/transcribe.py ← 转写脚本（faster-whisper 本机 / OpenAI / 阿里 DashScope）
+├── scripts/shrink.py     ← 压缩/切分录音，解决网页上传 30MB 限制
 ├── references/整理规范.md ← 逐字稿怎么整理成速记，含前后对照例子
 ├── references/engines.md ← 引擎安装、模型选择、排错
 └── assets/速记模板.md    ← 速记稿的固定结构
